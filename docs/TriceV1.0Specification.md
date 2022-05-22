@@ -5,21 +5,19 @@
   <ol>
 
 <!-- vscode-markdown-toc -->
-
-- [*Trice*  Version 1.0 Specification (Draft)](#trice--version-10-specification-draft)
-  - [1. <a name='Preface'></a>Preface](#1-preface)
-  - [2. <a name='Compatibility'></a>Compatibility](#2-compatibility)
-  - [3. <a name='Framing'></a>Framing](#3-framing)
-  - [4. <a name='TriceIDlisttil.json'></a>*Trice* ID list `til.json`](#4-trice-id-list-tiljson)
-  - [5. <a name='Tricelocationinformationfileli.json'></a>*Trice* location information file `li.json`](#5-trice-location-information-file-lijson)
-  - [6. <a name='TREXTriceextendableencoding'></a>TREX (*Trice* extendable) encoding](#6-trex-trice-extendable-encoding)
-    - [6.1. <a name='Symbols'></a>Symbols](#61-symbols)
-    - [6.2. <a name='Mainstreamlogs'></a>Main stream logs](#62-main-stream-logs)
-      - [6.2.1. <a name='Triceformat'></a>*Trice* format](#621-trice-format)
-      - [6.2.2. <a name='COBSencoding'></a>Framing (TCOBS or COBS encoding) and optional encryption](#622-framing-tcobs-or-cobs-encoding-and-optional-encryption)
-    - [6.3. <a name='ExtendedTricesasfutureoption'></a>Extended *Trices* as future option](#63-extended-trices-as-future-option)
-    - [6.4. <a name='Unknownuserdata'></a>Unknown user data](#64-unknown-user-data)
-  - [7. <a name='Changelog'></a>Changelog](#7-changelog)
+* 1. [Preface](#Preface)
+* 2. [Compatibility](#Compatibility)
+* 3. [Framing](#Framing)
+* 4. [*Trice* ID list `til.json`](#TriceIDlisttil.json)
+* 5. [*Trice* location information file `li.json`](#Tricelocationinformationfileli.json)
+* 6. [TREX (*Trice* extendable) encoding](#TREXTriceextendableencoding)
+	* 6.1. [Symbols](#Symbols)
+	* 6.2. [Main stream logs](#Mainstreamlogs)
+		* 6.2.1. [*Trice* format](#Triceformat)
+		* 6.2.2. [Framing (TCOBS or COBS encoding) and optional encryption](#FramingTCOBSorCOBSencodingandoptionalencryption)
+	* 6.3. [Extended *Trices* as future option](#ExtendedTricesasfutureoption)
+	* 6.4. [Unknown user data](#Unknownuserdata)
+* 7. [Changelog](#Changelog)
 
 <!-- vscode-markdown-toc-config
 	numbering=true
@@ -42,6 +40,8 @@ The with name "COBS" branded [*Trice* v0.48.0 encoding](./TriceMessagesEncoding.
 * The additional padding bytes to achieve 32 bit sizes are not needed. The user could add them by himself if really needed.
 * The 4 timestamp bytes in front of each *Trice* demand the COBS package descriptor. The timestamp should go inside the *Trice* message and be optionally smaller.
 
+<p align="right">(<a href="#top">back to top</a>)</p>
+
 ##  2. <a name='Compatibility'></a>Compatibility
 
 * The *Trice* v0.48.0 user syntax will remain mainly unchanged. The letter case of the ID codes the target timestamp size. (see below)
@@ -51,17 +51,25 @@ The with name "COBS" branded [*Trice* v0.48.0 encoding](./TriceMessagesEncoding.
 * The issue [#242 Add target context option](https://github.com/rokath/trice/issues/242) could get the label "wontfix". When a task ID is needed, it could be also a data value in such cases.
 * The same user source files usable with the legacy *Trice* COBS encoding and the proposed additional [TREX](#TREXTriceextendableencoding) encoding. The `#define TRICE_FILE Id(n)` is ignored when TREX is used.
 
+<p align="right">(<a href="#top">back to top</a>)</p>
+
 ##  3. <a name='Framing'></a>Framing
 
-Framing will be done with [TCOBS](./TCOBSSpecification.md) for data reduction. As a pre-v1.0 version normal COBS will be used. For robustness each *Trice* gets its own TCOBS package. User data are in separate TCOBS packages encoded. When *Trices* are accumulated in a double half buffer, their separation in TCOBS packages is possible until the first extended *Trice*. Because of the generally unknown extended *Trice* length from this point, all following *Trices* in this half buffer need to go in one TCOBS package (including optional padding bytes) what is ok. The only disadvantage with this is, that in case of a data disruption at this place, several *Trice* messages can get lost. 
+Framing will be done with [TCOBS](./TCOBSSpecification.md) for data reduction. As a pre-v1.0 version normal COBS will be used. For robustness each *Trice* gets its own TCOBS package. User data are in separate TCOBS packages encoded. When *Trices* are accumulated in a double half buffer, their separation in TCOBS packages is possible until the first extended *Trice*. Because of the generally unknown extended *Trice* length from this point, all following *Trices* in this half buffer need to go in one TCOBS package (including optional padding bytes) what is ok. The only disadvantage with this is, that in case of a data disruption at this place, several *Trice* messages can get lost.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
 
 ##  4. <a name='TriceIDlisttil.json'></a>*Trice* ID list `til.json`
 
 This file integrates all firmware variants and versions as v0.48.0 does. For the implementation of the optional *Trice* extensions (see below), a `til.json` format extension is needed because several files are unhandy. Both `til.json` formats will be accepted in the future.
 
+<p align="right">(<a href="#top">back to top</a>)</p>
+
 ##  5. <a name='Tricelocationinformationfileli.json'></a>*Trice* location information file `li.json`
 
 With [TREX](#TREXTriceextendableencoding) encoding the location information needs no transmission anymore but goes not into the `til.json` file. In the field the location information is normally useless and easy outdated. The software developer is the one, mostly interested in the location information. So, if the `li.json` is generated and therefore available, the **trice** tool automatically displays file name and line number. When the firmware left the developer table, only the file `til.json` is of interest. The **trice** tool will silently not display location information, if the `li.json` file is not found. For in-field logging, the usage of option `-showID string` could be used. This allows later an easy location of the relevant source code. Also the planned `-binaryLogfile` option is possible. See [issue #267 Add `-binaryLogfile` option](https://github.com/rokath/trice/issues/267). It allows a replay of the logs and the developer can provide the right version of the `li.json` file.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
 
 ##  6. <a name='TREXTriceextendableencoding'></a>TREX (*Trice* extendable) encoding
 
@@ -93,48 +101,35 @@ With [TREX](#TREXTriceextendableencoding) encoding the location information need
 | `11iiiiiiI TT TT NC ...` | `TRICE( ID(n), "...", ...);` | *Trice* format with 32-bit timestamp |
 
 * Technically it is possible to have distinct ID spaces for each ID type but this would give no real advantage and complicate the handling only.
-* [x] For straight forward runtime code the identifiers `id`, `Id` and `ID` are sub macros:
+* [x] For straight forward runtime code, the identifiers `id`, `Id` and `ID` are sub macros:
   * [ ] **id(n)**
+  
   ```c
-<<<<<<< HEAD
   #define id(n) do{ TRICE_PUT16(0x4000 | n ); }while(0),
   ```
+
   * [ ] **Id(n)**
+
   ```c
   #define Id(n) do{ uint16_t ts = timestamp16;
-                    TRICE_PUT16(0x8000 | n ); 
-                    TRICE_PUT16( ts ); }while(0),
+                  TRICE_PUT16(0x8000 | n ); 
+                  TRICE_PUT16( ts ); }while(0),
   ```
+
   * [ ] **ID(n)**
+
   ```c
   #define ID(n) do{ uint32_t ts = timestamp32;
-                    TRICE_PUT16(0xC000 | n ); 
-                    TRICE_PUT32( ts ); }while(0),
+                  TRICE_PUT16(0xC000 | n ); 
+                  TRICE_PUT32( ts ); }while(0),
   ```
+
 * [ ] Usage:
+
 ```c
 #define T8(id, pFmt, v0) TRICE_ENTER; id; TRICE_PUT16(v0); TRICE_LEAVE;
 ```
 
-=======
-  #define id(n) do{ TRICE_ENTER
-                    TRICE_PUT16(0x4000 | n ); }while(0)
-  ```
-  * [ ] **Id(n)**
-  ```c
-  #define id(n) do{ uint16_t ts = timestamp16;
-                    TRICE_ENTER
-                    TRICE_PUT16(0x8000 | n ); 
-                    TRICE_PUT16( ts ); }while(0)
-  ```
-  * [ ] **ID(n)**
-  ```c
-  #define id(n) do{ uint32_t ts = timestamp32;
-                    TRICE_ENTER
-                    TRICE_PUT16(0xC000 | n ); 
-                    TRICE_PUT32( ts ); }while(0)
-  ```
->>>>>>> testing
 * [x] New *Trice* macros are writable without the ID, so when `trice u` is executed a CLI switch controls the ID type selection:
   * The update switch `-timeStamp 32` defaults new ID´s to `ID`.
   * The update switch `-timeStamp 16` defaults new ID´s to `Id`.
@@ -156,17 +151,17 @@ With [TREX](#TREXTriceextendableencoding) encoding the location information need
     * N > 127
     * extended *Trice* without C
 
-####  6.2.2. <a name='COBSencoding'></a>Framing (TCOBS or COBS encoding) and optional encryption
+####  6.2.2. <a name='FramingTCOBSorCOBSencodingandoptionalencryption'></a>Framing (TCOBS or COBS encoding) and optional encryption
 
 * Inside double buffer each *Trice* starts at a u16 boundary.
-* The encoding drops the padding bytes using N and encodes each *Trice* separately. This minizmizes data loss in case of disruptions for example caused by reset. If size minimizing matters hard, several *Trices* are encodable as group also, but this leads to more data losses in case of disruptions.
+* The encoding drops the padding bytes using N and encodes each *Trice* separately. This minimizes data loss in case of disruptions for example caused by reset. If size minimizing matters hard, several *Trices* are codable as group also, but this leads to more data losses in case of disruptions.
 
 ###  6.3. <a name='ExtendedTricesasfutureoption'></a>Extended *Trices* as future option
 
 If for special cases, the main stream encoding is not sufficient, the user can add its own encoding.
 
 * `00...` sub-options `TRICEX0`, `TRICEX1`, `TRICEX2`, `TRICEX3`
-  * `-ex0 pos -ex1 pos -ex2 pos -ex3 pos`  Select position in extendable table for TRICEXn, 4 codings selectable in one shot.
+  * `-ex0 pos -ex1 pos -ex2 pos -ex3 pos`  Select position in extendable table for TRICEXn, 4 coding's selectable in one shot.
   * The table is creatable and extendable on demand.
   * For each line an appropriate target and host code needs to be done.
   * Then the target configuration must match the CLI switches.
@@ -198,7 +193,7 @@ If for special cases, the main stream encoding is not sufficient, the user can a
       * Usage: `TRICEX2( "point %x,%d\n", a, b);`
   * *Trice* extensions without cycle counter are counted as well.
   * Each TRICEXn has its own ID space.
-* Several different *Trice* extensons are contributable.
+* Several different *Trice* extensions are contributive.
 
 ###  6.4. <a name='Unknownuserdata'></a>Unknown user data
 
@@ -210,6 +205,8 @@ If for special cases, the main stream encoding is not sufficient, the user can a
 * So, if *Trice* extensions not used, all `00...` packages are ignored as unknown user data.
 * Unknown user data have an unknown length. Therefore they cannot share a COBS packet with *Trices*.
 * Unknown user data packets do not affect the cycle counter. The can have their own cycle counter.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
 
 ##  7. <a name='Changelog'></a>Changelog
 
@@ -223,8 +220,9 @@ If for special cases, the main stream encoding is not sufficient, the user can a
 | 2022-MAR-15 |  0.5.0  | Minor corrections |
 | 2022-MAR-16 |  0.6.0  | TCOBS prime number comment added, simplified |
 | 2022-MAR-17 |  0.7.0  | TCOBS move into a separate [TCOBS Specification](./TCOBSSpecification.md), Framing more detailed. |
-| 2022-MAR-20 |  0.7.1. | Contributable *Trice* extension remark added. |
+| 2022-MAR-20 |  0.7.1. | Contributive *Trice* extension remark added. |
 | 2022-APR-12 |  0.8.0. | TREX mainstream format changed to timestamps immediate after ID. |
+| 2022-MAY-20 |  0.8.1. | Formatting, Spelling |
 
 - [*Trice*  Version 1.0 Specification (Draft)](#trice--version-10-specification-draft)
   - [1. <a name='Preface'></a>Preface](#1-preface)
@@ -236,7 +234,7 @@ If for special cases, the main stream encoding is not sufficient, the user can a
     - [6.1. <a name='Symbols'></a>Symbols](#61-symbols)
     - [6.2. <a name='Mainstreamlogs'></a>Main stream logs](#62-main-stream-logs)
       - [6.2.1. <a name='Triceformat'></a>*Trice* format](#621-trice-format)
-      - [6.2.2. <a name='COBSencoding'></a>Framing (TCOBS or COBS encoding) and optional encryption](#622-framing-tcobs-or-cobs-encoding-and-optional-encryption)
+      - [6.2.2. <a name='FramingTCOBSorCOBSencodingandoptionalencryption'></a>Framing (TCOBS or COBS encoding) and optional encryption](#622-framing-tcobs-or-cobs-encoding-and-optional-encryption)
     - [6.3. <a name='ExtendedTricesasfutureoption'></a>Extended *Trices* as future option](#63-extended-trices-as-future-option)
     - [6.4. <a name='Unknownuserdata'></a>Unknown user data](#64-unknown-user-data)
   - [7. <a name='Changelog'></a>Changelog](#7-changelog)

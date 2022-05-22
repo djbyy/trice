@@ -1,8 +1,6 @@
 /*! \file trice.c
 \author Thomas.Hoehenleitner [at] seerose.net
 *******************************************************************************/
-#include "trice_test.h"
-#include "tcobs.h"
 #include "trice.h"
 
 static unsigned triceDepthMax = 0; //!< triceDepthMax is a diagnostics value usable to optimize buffer size.
@@ -151,7 +149,7 @@ static void triceBlockingPutChar( uint8_t c ){
     triceTransmitData8( c );
 } 
 
-//! TriceBlockingWrite returns after buf was complketely written.
+//! TriceBlockingWrite returns after buf was completely written.
 void TriceBlockingWrite( uint8_t const * buf, unsigned len ){
     for( unsigned i = 0; i < len; i++ ){ 
         triceBlockingPutChar( buf[i] ); }
@@ -310,14 +308,3 @@ void TriceEncrypt( uint32_t* p, unsigned count ){
 }
 
 #endif // #ifdef TRICE_ENCRYPT
-
-#ifdef TRICE_CGO_TEST
-
-int triceBufferDepth = 0;
-uint8_t* triceBuffer;
-
-uint32_t ReadUs32( void ){
-    return 0x11111111;
-}
-
-#endif // #ifdef TRICE_CGO_TEST

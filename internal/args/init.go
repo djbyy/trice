@@ -12,13 +12,18 @@ import (
 	"github.com/rokath/trice/internal/emitter"
 	"github.com/rokath/trice/internal/id"
 	"github.com/rokath/trice/internal/receiver"
-	"github.com/rokath/trice/pkg/cage"
 	"github.com/rokath/trice/pkg/cipher"
 )
 
-const defaultPrefix = "source: "
+const (
+	defaultPrefix = "source: "
+)
 
 var (
+
+	// LogfileName is the filename of the logfile. "off" inhibits logfile writing.
+	LogfileName = "off"
+
 	colorInfo = `The format strings can start with a lower or upper case channel information.
 See https://github.com/rokath/trice/blob/master/pkg/src/triceCheck.c for examples. Color options: 
 "off": Disable ANSI color. The lower case channel information is kept: "w:x"-> "w:x" 
@@ -125,7 +130,7 @@ It is the only setup parameter. The other values default to 8N1 (8 data bits, no
 	argsInfo := fmt.Sprint(`Use to pass port specific parameters. The "default" value depends on the used port:
 port "BUFFER": default="`, receiver.DefaultBUFFERArgs, `", Option for args is any space separated decimal number byte sequence.
 port "DUMP": default="`, receiver.DefaultDumpArgs, `", Option for args is any space or comma separated byte sequence.
-port "COMn": default="`, receiver.DefaultCOMArgs, `", use "TARM" for a different driver. (For baud rate settings see -baud.)
+port "COMn": default="`, receiver.DefaultCOMArgs, `", Unused option for a different driver. (For baud rate settings see -baud.)
 port "FILE": default="`, receiver.DefaultFileArgs, `", Option for args is any file name. Trice retries on EOF.
 port "FILEBUFFER": default="`, receiver.DefaultFileArgs, `", Option for args is any file name. Trice stops on EOF.
 port "J-LINK": default="`, receiver.DefaultLinkArgs, `", `, linkArgsInfo, `
@@ -134,6 +139,7 @@ port "TCP4": default="`, receiver.DefaultTCP4Args, `", use any IP:port endpoint 
 `)
 
 	fsScLog.StringVar(&receiver.PortArguments, "args", "default", argsInfo)
+	fsScLog.StringVar(&TCPOutAddr, "tcp", "", `TCP address for an external receiver like Putty: In "Terminal" enable "Implicit CR in every CR", In "Session" Connection type:"Other:Telnet", specify "hostname:port" here like "localhost:64000"`)
 	fsScLog.BoolVar(&emitter.DisplayRemote, "displayserver", false, `Send trice lines to displayserver @ ipa:ipp.
 Example: "trice l -port COM38 -ds -ipa 192.168.178.44" sends trice output to a previously started display server in the same network.`)
 	fsScLog.BoolVar(&emitter.DisplayRemote, "ds", false, "Short for '-displayserver'.")
@@ -151,6 +157,7 @@ Example: "trice l -port COM38 -ds -ipa 192.168.178.44" sends trice output to a p
 	fsScLog.BoolVar(&receiver.ShowInputBytes, "s", false, "Short for '-showInputBytes'.")
 	fsScLog.BoolVar(&decoder.TestTableMode, "testTable", false, `Generate testTable output and ignore -prefix, -suffix, -ts, -color. `+boolInfo)
 	flagLogfile(fsScLog)
+	flagBinaryLogfile(fsScLog)
 	flagVerbosity(fsScLog)
 	flagIDList(fsScLog)
 	flagIPAddress(fsScLog)
@@ -218,17 +225,26 @@ func flagsRefreshAndUpdate(p *flag.FlagSet) {
 	flagIDList(p)
 }
 
+func flagBinaryLogfile(p *flag.FlagSet) {
+	p.StringVar(&receiver.BinaryLogfileName, "binaryLogfile", "off", `Append all output to logfile. Options are: 'off|none|filename|auto':
+"off": no binary logfile (same as "none")
+"none": no binary logfile (same as "off")
+"auto": Use as binary logfile name "2006-01-02_1504-05_trice.bin" with actual time.
+"filename": Any other string than "auto", "none" or "off" is treated as a filename. If the file exists, logs are appended.
+All trice output of the appropriate subcommands is appended per default into the logfile trice additionally to the normal output.
+Change the filename with "-binaryLogfile myName.bin" or switch logging off with "-binaryLogfile none".
+`)
+}
+
 func flagLogfile(p *flag.FlagSet) {
-	p.StringVar(&cage.Name, "logfile", "off", `Append all output to logfile. Options are: 'off|none|filename|auto':
+	p.StringVar(&LogfileName, "logfile", "off", `Append all output to logfile. Options are: 'off|none|filename|auto':
 "off": no logfile (same as "none")
 "none": no logfile (same as "off")
 "auto": Use as logfile name "2006-01-02_1504-05_trice.log" with actual time.
 "filename": Any other string than "auto", "none" or "off" is treated as a filename. If the file exists, logs are appended.
 All trice output of the appropriate subcommands is appended per default into the logfile trice additionally to the normal output.
 Change the filename with "-logfile myName.txt" or switch logging off with "-logfile none".
-`) // flag
-	//	p.StringVar(&cage.Name, "lg", "off", `Short for -logfile.
-	//`) // short flag
+`)
 }
 
 func flagSrcs(p *flag.FlagSet) {

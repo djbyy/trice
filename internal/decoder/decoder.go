@@ -25,7 +25,7 @@ import (
 
 const (
 	// defaultSize is the beginning receive and sync buffer size.
-	defaultSize = 4096
+	defaultSize = 64 * 1014
 
 	// littleEndian is true for little endian trice data.
 	littleEndian = true
@@ -217,6 +217,8 @@ func Translate(w io.Writer, sw *emitter.TriceLineComposer, lut id.TriceIDLookUp,
 // decodeAndComposeLoop does not return.
 func decodeAndComposeLoop(w io.Writer, sw *emitter.TriceLineComposer, dec Decoder, lut id.TriceIDLookUp) error {
 	b := make([]byte, defaultSize) // intermediate trice string buffer
+	bufferReadStartTime := time.Now()
+	sleepCounter := 0
 	for {
 		n, err := dec.Read(b) // Code to measure, dec.Read can return n=0 in some cases and then wait.
 
@@ -225,16 +227,20 @@ func decodeAndComposeLoop(w io.Writer, sw *emitter.TriceLineComposer, dec Decode
 		}
 
 		if n == 0 {
-			if receiver.Port == "FILEBUFFER" && err == io.EOF { // do not wait if a predefined buffer
-				_, err := sw.Write([]byte(`\n`)) // add newline as line end to display any started line
+			if receiver.Port == "FILEBUFFER" /*&& err == io.EOF*/ && time.Since(bufferReadStartTime) > 100*time.Millisecond { // do not wait if a predefined buffer
+				if len(sw.Line) > 0 {
+					_, _ = sw.Write([]byte(`\n`)) // add newline as line end to display any started line
+				}
 				msg.OnErr(err)
 				return io.EOF
 			}
 			if Verbose {
 				fmt.Fprintln(w, err, "-> WAITING...")
 			}
-			if receiver.Port == "FILE" {
-				time.Sleep(100 * time.Millisecond)
+			sleepCounter++
+			if sleepCounter > 100 {
+				time.Sleep(10 * time.Millisecond)
+				sleepCounter = 0
 			}
 			continue // read again
 		}

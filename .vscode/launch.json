@@ -2,6 +2,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "ver -logfile auto",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/trice",
+            "env": {},
+            "args": ["ver",
+                     "-logfile",
+                     "auto",
+                     "-verbose"
+            ]
+        },
+       {
             "name": "Launch test function",
             "type": "go",
             "request": "launch",
@@ -67,21 +80,19 @@
                      "-idlist",
                      "${workspaceFolder}/til.json"
             ]
-        },        {
-            "name": "-p FILE DUMP",
+        },
+        {
+            "name": "-p FILEBUFFER",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/trice",
             "env": {},
             "args": ["log",
-                    "-v",
                     "-port",
-                    "FILE",
+                    "FILEBUFFER",
                      "-args",
-                     "${workspaceFolder}/x.txt",
-                     "-e",
-                     "DUMP",
+                     "${workspaceFolder}/internal/decoder/testdata/trice.bin",
                      "-idlist",
                      "${workspaceFolder}/til.json"
             ]
@@ -246,7 +257,7 @@
                     "-til",
                     "${workspaceFolder}/til.json",
                      "-p",
-                     "COM7"
+                     "COM6"
             ]
         },        
         {

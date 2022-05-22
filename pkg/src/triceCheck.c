@@ -88,6 +88,15 @@ void TriceCheckSet(int index) {
 #endif
     switch (index) {
         case 0:
+            TRICE( Id(51963), "dbg:Hi!\n" );
+            TRICE( Id(42282), "dbg:\tHi!\n" );
+            TRICE( Id(45805), "dbg:\t\tHi!\n" );
+            TRICE( Id(32829), "dbg:\t\t\tHi!\n" );
+            TRICE( Id(37913), "dbg:\\tHi!\n" );
+            TRICE( Id(51899), "dbg:\aHi!\n" );
+            TRICE( Id(38453), "dbg:\a\aHi!\n" );
+            TRICE( Id(45474), "dbg:\a\a\aHi!\n" );
+            TRICE( Id(58434), "dbg:\\aHi!\n" );
             //TCOBSCheck();
         break;
         case 10:

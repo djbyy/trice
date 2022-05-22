@@ -67,7 +67,13 @@ func (p *TriceLineComposer) WriteString(s string) (n int, err error) {
 		return
 	}
 	var emptyLine bool
-	s0 := strings.ReplaceAll(s, "\\r\\n", "\n")
+	// https://www.geeksforgeeks.org/rune-in-golang/
+	bs := "~bs___________________bs~" // escaped backslash
+	sa := strings.ReplaceAll(s, `\\`, bs)
+	sb := strings.ReplaceAll(sa, `\a`, "\u0007") // Alert or Bell
+	sc := strings.ReplaceAll(sb, `\t`, "\u0009") // horizontal tab
+	sd := strings.ReplaceAll(sc, bs, "\\")
+	s0 := strings.ReplaceAll(sd, "\\r\\n", "\n")
 	s1 := strings.ReplaceAll(s0, "\\n", "\n")
 	sn := strings.ReplaceAll(s1, "\r\n", "\n")
 	ss := strings.Split(sn, "\n")

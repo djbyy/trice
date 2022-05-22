@@ -8,6 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
+	"net"
 	"os"
 	"sync"
 	"time"
@@ -18,14 +21,13 @@ import (
 	"github.com/rokath/trice/internal/id"
 	"github.com/rokath/trice/internal/link"
 	"github.com/rokath/trice/internal/receiver"
-	"github.com/rokath/trice/pkg/cage"
 	"github.com/rokath/trice/pkg/cipher"
 	"github.com/rokath/trice/pkg/msg"
 )
 
 // Handler is called in main, evaluates args and calls the appropriate functions.
 // It returns for program exit.
-func Handler(w io.Writer, args []string) error {
+func Handler(args []string) error {
 
 	id.FnJSON = id.ConditionalFilePath(id.FnJSON)
 
@@ -35,7 +37,6 @@ func Handler(w io.Writer, args []string) error {
 			Date = fi.ModTime().String()
 		}
 	}
-	cage.DefaultLogfileName = "2006-01-02_1504-05_trice.log"
 
 	// Verify that a sub-command has been provided: os.Arg[0] is the main command (trice), os.Arg[1] will be the sub-command.
 	if len(args) < 2 {
@@ -53,44 +54,44 @@ func Handler(w io.Writer, args []string) error {
 		return fmt.Errorf("unknown sub-command '%s'. try: 'trice help|h'", subCmd)
 	case "h", "help":
 		msg.OnErr(fsScHelp.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		return scHelp(w)
 	case "s", "scan":
 		msg.OnErr(fsScScan.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		_, err := com.GetSerialPorts(w)
 		return err
 	case "ver", "version":
 		msg.OnErr(fsScVersion.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		return scVersion(w)
 	case "renew":
 		msg.OnErr(fsScRenew.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		return id.SubCmdReNewList(w)
 	case "r", "refresh":
 		msg.OnErr(fsScRefresh.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		return id.SubCmdRefreshList(w)
 	case "u", "update":
 		msg.OnErr(fsScUpdate.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		return id.SubCmdUpdate(w)
 	case "zeroSourceTreeIds":
 		msg.OnErr(fsScZero.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		return id.ScZero(w, *pSrcZ, fsScZero)
 	case "sd", "shutdown":
 		msg.OnErr(fsScSdSv.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		return emitter.ScShutdownRemoteDisplayServer(w, 0) // 0|1: 0=no 1=with shutdown timestamp in display server
 	case "ds", "displayServer":
 		msg.OnErr(fsScSv.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		return emitter.ScDisplayServer(w) // endless loop
 	case "l", "log":
 		msg.OnErr(fsScLog.Parse(subArgs))
-		distributeArgs(w)
+		w := distributeArgs()
 		logLoop(w) // endless loop
 		return nil
 	}
@@ -121,8 +122,7 @@ func logLoop(w io.Writer) {
 		}
 		decoder.ShowTargetTimestamp = "" // todo: justify this line
 	}
-	c := cage.Start(w, cage.Name)
-	defer cage.Stop(w, c)
+
 	var lu id.TriceIDLookUp
 	if id.FnJSON == "emptyFile" { // reserved name for tests only
 		lu = make(id.TriceIDLookUp)
@@ -146,7 +146,6 @@ func logLoop(w io.Writer) {
 		if e != nil {
 			fmt.Fprintln(w, e)
 			if !interrupted {
-				//cage.Stop(c)
 				return // hopeless
 			}
 			time.Sleep(1000 * time.Millisecond) // retry interval
@@ -159,6 +158,9 @@ func logLoop(w io.Writer) {
 		if receiver.ShowInputBytes {
 			rc = receiver.NewBytesViewer(w, rc)
 		}
+		if receiver.BinaryLogfileName != "off" && receiver.BinaryLogfileName != "none" {
+			rc = receiver.NewBinaryLogger(w, rc)
+		}
 		e = decoder.Translate(w, sw, lu, m, rc)
 		if io.EOF == e {
 			return // end of predefined buffer
@@ -168,8 +170,6 @@ func logLoop(w io.Writer) {
 
 // scVersion is sub-command 'version'. It prints version information.
 func scVersion(w io.Writer) error {
-	cage.Enable(w)
-	defer cage.Disable(w)
 	if verbose {
 		fmt.Fprintln(w, "https://github.com/rokath/trice")
 	}
@@ -181,20 +181,6 @@ func scVersion(w io.Writer) error {
 	return nil
 }
 
-// distributeArgs is distributing values used in several packages.
-// It must not be called before the appropriate arg parsing.
-func distributeArgs(w io.Writer) {
-	//com.Verbose = verbose
-	id.Verbose = verbose
-	link.Verbose = verbose
-	cage.Verbose = verbose
-	decoder.Verbose = verbose
-	emitter.Verbose = verbose
-	receiver.Verbose = verbose
-	emitter.TestTableMode = decoder.TestTableMode
-	evaluateColorPalette(w)
-}
-
 // evaluateColorPalette
 func evaluateColorPalette(w io.Writer) {
 	switch emitter.ColorPalette {
@@ -204,4 +190,85 @@ func evaluateColorPalette(w io.Writer) {
 		fmt.Fprintln(w, "Ignoring unknown -color", emitter.ColorPalette, "using default.")
 		emitter.ColorPalette = "default"
 	}
+}
+
+// distributeArgs is distributing values used in several packages.
+// It must not be called before the appropriate arg parsing.
+func distributeArgs() io.Writer {
+
+	id.Verbose = verbose
+	link.Verbose = verbose
+	decoder.Verbose = verbose
+	emitter.Verbose = verbose
+	receiver.Verbose = verbose
+	emitter.TestTableMode = decoder.TestTableMode
+
+	w := triceOutput(os.Stdout, LogfileName)
+	evaluateColorPalette(w)
+	return w
+}
+
+// triceOutput returns w as a a optional combined io.Writer. If fn is given the returned io.Writer write a copy into the given file.
+func triceOutput(w io.Writer, fn string) io.Writer {
+	tcpWriter := TCPWriter()
+
+	// start logging only if fn not "none" or "off"
+	if fn == "none" || fn == "off" {
+		if verbose {
+			fmt.Println("No logfile writing...")
+		}
+		return io.MultiWriter(w, tcpWriter)
+	}
+
+	// defaultLogfileName is the pattern for default logfile name. The timestamp is replaced with the actual time.
+	defaultLogfileName := "2006-01-02_1504-05_trice.log"
+	if fn == "auto" {
+		fn = defaultLogfileName
+	}
+	// open logfile
+	if fn == defaultLogfileName {
+		fn = time.Now().Format(fn) // Replace timestamp in default log filename.
+	} // Otherwise, use cli defined log filename.
+
+	lfHandle, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	msg.FatalOnErr(err)
+	if verbose {
+		fmt.Printf("Writing to logfile %s...\n", fn)
+	}
+
+	return io.MultiWriter(w, tcpWriter, lfHandle)
+}
+
+var TCPOutAddr = ""
+
+func TCPWriter() io.Writer {
+	if TCPOutAddr == "" {
+		return ioutil.Discard
+	}
+	// The net.Listen() function makes the program a TCP server. This functions returns a Listener variable, which is a generic network listener for stream-oriented protocols.
+	fmt.Println("Listening on " + TCPOutAddr + "...")
+	listen, err := net.Listen("tcp", TCPOutAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer listen.Close()
+
+	// t is only after a successful call to Accept() that the TCP server can begin to interact with TCP clients.
+	TCPConn, err := listen.Accept()
+	fmt.Println("Accepting connection:", TCPConn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Make a buffer to hold incoming data.
+	buf := make([]byte, 1024)
+	reqLen, err := TCPConn.Read(buf)
+	if err != nil {
+		fmt.Println("Error reading:", err.Error())
+	}
+	fmt.Println(string(buf[:reqLen]))
+	TCPConn.Write([]byte("Trice connected...\r\n"))
+
+	//defer TCPConn.Close()
+	return TCPConn
+
 }

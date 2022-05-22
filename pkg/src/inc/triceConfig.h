@@ -24,14 +24,17 @@ extern "C" {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// CGO interface
+// CGO interface (for testing)
 //
 
 #ifdef TRICE_CGO_TEST
 
-#define TRICE_CYCLE_COUNTER 0 //! Do not add cycle counter
+#define TRICE_CYCLE_COUNTER 0 //!< TRICE_CYCLE_COUNTER 0 means: do not add cycle counter.
 
+//! TRICE_WRITE copies buf with len into triceBuffer.
 #define TRICE_WRITE( buf, len ) do{ \
+    extern uint8_t* triceBuffer; \
+    extern int triceBufferDepth; \
     memcpy(triceBuffer, buf, len); \
     triceBufferDepth = len; \
 }while(0)
@@ -216,7 +219,7 @@ TRICE_INLINE uint32_t triceTxDataRegisterEmpty(void) {
 //! User must provide this function.
 TRICE_INLINE void triceTransmitData8(uint8_t v) {
     LL_USART_TransmitData8(TRICE_UART, v);
-    ToggleOpticalFeedbackLED();
+    // ToggleOpticalFeedbackLED();
 }
 
 //! Allow interrupt for empty trice data transmit register.
